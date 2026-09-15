@@ -1,0 +1,16 @@
+HTTP/1.1 400 Bad Request
+Host: 127.0.0.1:8000
+Connection: close
+X-Powered-By: PHP/8.5.0
+Cache-Control: no-cache, private
+Date: Sun, 30 Aug 2026 16:48:57 GMT
+Content-Type: application/json
+X-RateLimit-Limit: 5
+X-RateLimit-Remaining: 2
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+Vary: Origin
+
