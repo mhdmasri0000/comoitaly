@@ -69,6 +69,20 @@ class EmailOtpVerificationTest extends TestCase
         $response->assertJsonPath('data.requires_verification', true);
     }
 
+    public function test_dealer_can_login_without_email_verification(): void
+    {
+        $dealer = $this->makeUser('dealer');
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $dealer->email,
+            'password' => '1234567890',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.role', 'dealer');
+        $response->assertJsonPath('data.access_token', fn ($token) => is_string($token) && $token !== '');
+    }
+
     public function test_verify_otp_activates_account_and_returns_token(): void
     {
         $user = $this->makeUser('user');

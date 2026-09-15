@@ -79,7 +79,7 @@ class AuthController extends Controller
             $user->update(['language' => $language]);
         }
 
-        if ($user->email_verified_at === null && $user->role !== 'admin') {
+        if ($user->email_verified_at === null && ! in_array($user->role, ['admin', 'dealer'], true)) {
             try {
                 $code = app(OtpService::class)->issue($user->email, $user->id, 'register');
                 $this->sendOtp($user, $code);
