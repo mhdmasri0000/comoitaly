@@ -102,6 +102,19 @@ return [
     'token_expiration_days' => (int) env('SANCTUM_TOKEN_EXPIRATION_DAYS', 5),
     'refresh_token_expiration_days' => (int) env('SANCTUM_REFRESH_TOKEN_EXPIRATION_DAYS', 5),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Email OTP Verification
+    |--------------------------------------------------------------------------
+    |
+    | When disabled, registration and login no longer require email OTP
+    | verification. The OTP code, mailer, and endpoints stay wired but are
+    | not triggered.
+    |
+    */
+
+    'otp_enabled' => filter_var(env('OTP_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+
     'previous_keys' => [
         ...array_filter(
             explode(',', (string) env('APP_PREVIOUS_KEYS', ''))

@@ -36,6 +36,12 @@ class AuthController extends Controller
         unset($data['password'], $data['confirm_password']);
         $user = User::create($data);
 
+        if (! config('app.otp_enabled')) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+
+            return $this->authPayload($user, 'Registration successful', ['requires_verification' => false]);
+        }
+
         $code = app(OtpService::class)->issue($user->email, $user->id, 'register');
         $this->sendOtp($user, $code);
 
@@ -79,7 +85,7 @@ class AuthController extends Controller
             $user->update(['language' => $language]);
         }
 
-        if ($user->email_verified_at === null && ! in_array($user->role, ['admin', 'dealer'], true)) {
+        if (config('app.otp_enabled') && $user->email_verified_at === null && ! in_array($user->role, ['admin', 'dealer'], true)) {
             try {
                 $code = app(OtpService::class)->issue($user->email, $user->id, 'register');
                 $this->sendOtp($user, $code);
@@ -135,6 +141,10 @@ class AuthController extends Controller
 
     public function resendOtp(Request $request)
     {
+        if (! config('app.otp_enabled')) {
+            return ApiResponse::success('Email verification is disabled');
+        }
+
         $data = $request->validate(['email' => ['required', 'email']]);
 
         $user = User::where('email', $data['email'])->first();
@@ -153,12 +163,12 @@ class AuthController extends Controller
         return ApiResponse::success('A new verification code has been sent', ['email' => $user->email]);
     }
 
-    private function authPayload(User $user, string $message)
+    private function authPayload(User $user, string $message, array $extra = [])
     {
         $access = $user->createToken('mobile', ['api'], now()->addDays((int) config('app.token_expiration_days', 30)))->plainTextToken;
         $refresh = $user->createToken('refresh', ['refresh'], now()->addDays((int) config('app.refresh_token_expiration_days', 30)))->plainTextToken;
 
-        return ApiResponse::success($message, [
+        return ApiResponse::success($message, $extra + [
             'access_token' => $access,
             'refresh_token' => $refresh,
             'token_type' => 'Bearer',

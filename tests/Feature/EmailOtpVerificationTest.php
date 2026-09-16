@@ -83,6 +83,35 @@ class EmailOtpVerificationTest extends TestCase
         $response->assertJsonPath('data.access_token', fn ($token) => is_string($token) && $token !== '');
     }
 
+    public function test_otp_verification_is_skipped_when_disabled(): void
+    {
+        config(['app.otp_enabled' => false]);
+        Mail::fake();
+
+        $register = $this->postJson('/api/auth/register', [
+            'first_name' => 'Nour',
+            'last_name' => 'Hassan',
+            'email' => 'skip.otp@example.com',
+            'phone_number' => '0934129999',
+            'password' => '1234567890',
+            'confirm_password' => '1234567890',
+        ]);
+
+        $register->assertOk();
+        $register->assertJsonPath('data.requires_verification', false);
+        $register->assertJsonPath('data.access_token', fn ($token) => is_string($token) && $token !== '');
+
+        $this->assertNotNull(User::where('email', 'skip.otp@example.com')->first()->email_verified_at);
+        Mail::assertNothingSent();
+
+        $unverified = $this->makeUser('user');
+
+        $this->postJson('/api/auth/login', [
+            'email' => $unverified->email,
+            'password' => '1234567890',
+        ])->assertOk();
+    }
+
     public function test_verify_otp_activates_account_and_returns_token(): void
     {
         $user = $this->makeUser('user');
