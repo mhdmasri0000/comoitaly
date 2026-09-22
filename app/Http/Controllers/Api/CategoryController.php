@@ -108,6 +108,14 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        if ($category->products()->exists()) {
+            return ApiResponse::error(
+                'Cannot delete a category that still contains products.',
+                ['category' => ['Move or delete the products in this category first.']],
+                409
+            );
+        }
+
         $category->delete();
 
         return ApiResponse::success('Category deleted successfully');

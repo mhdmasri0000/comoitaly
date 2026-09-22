@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -51,6 +52,92 @@ class SecurityTest extends TestCase
             $this->assertContains('auth:sanctum', $route->middleware());
             $this->assertContains('admin', $route->middleware());
         }
+    }
+
+    public function test_admin_cannot_delete_category_with_products(): void
+    {
+        $admin = User::create([
+            'id' => (string) Str::uuid(),
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'catalog-category-delete@example.com',
+            'phone_number' => '0500000012',
+            'password_hash' => Hash::make('123456'),
+            'role' => 'admin',
+        ]);
+        $category = Category::create([
+            'id' => (string) Str::uuid(),
+            'name' => ['en' => 'Category', 'ar' => 'فئة'],
+        ]);
+        Product::create([
+            'id' => (string) Str::uuid(),
+            'category_id' => $category->id,
+            'name' => ['en' => 'Product', 'ar' => 'منتج'],
+            'description' => ['en' => 'Description', 'ar' => 'وصف'],
+        ]);
+
+        $this->actingAs($admin, 'sanctum');
+
+        $this->deleteJson('/api/categories/'.$category->id)
+            ->assertStatus(409)
+            ->assertJsonPath('success', false);
+    }
+
+    public function test_admin_cannot_delete_product_in_order_history(): void
+    {
+        $admin = User::create([
+            'id' => (string) Str::uuid(),
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'catalog-product-delete@example.com',
+            'phone_number' => '0500000013',
+            'password_hash' => Hash::make('123456'),
+            'role' => 'admin',
+        ]);
+        $customer = User::create([
+            'id' => (string) Str::uuid(),
+            'first_name' => 'Customer',
+            'last_name' => 'User',
+            'email' => 'catalog-product-customer@example.com',
+            'phone_number' => '0500000014',
+            'password_hash' => Hash::make('123456'),
+            'role' => 'user',
+        ]);
+        $category = Category::create([
+            'id' => (string) Str::uuid(),
+            'name' => ['en' => 'Category', 'ar' => 'فئة'],
+        ]);
+        $product = Product::create([
+            'id' => (string) Str::uuid(),
+            'category_id' => $category->id,
+            'name' => ['en' => 'Product', 'ar' => 'منتج'],
+            'description' => ['en' => 'Description', 'ar' => 'وصف'],
+        ]);
+        $order = Order::create([
+            'id' => (string) Str::uuid(),
+            'user_id' => $customer->id,
+            'delivery_address' => 'Test address',
+            'payment_type' => 'cash',
+            'status' => 'pending',
+            'subtotal' => 10,
+            'delivery_fee' => 0,
+            'total' => 10,
+        ]);
+        OrderItem::create([
+            'id' => (string) Str::uuid(),
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'product_name' => 'Product',
+            'unit_price' => 10,
+            'total_price' => 10,
+            'quantity' => 1,
+        ]);
+
+        $this->actingAs($admin, 'sanctum');
+
+        $this->deleteJson('/api/products/'.$product->id)
+            ->assertStatus(409)
+            ->assertJsonPath('success', false);
     }
 
     public function test_security_headers_are_present(): void

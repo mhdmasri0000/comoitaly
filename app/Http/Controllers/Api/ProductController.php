@@ -9,6 +9,7 @@ use App\Models\ProductImage;
 use App\Models\ProductMeasurement;
 use App\Models\ProductSize;
 use App\Models\ProductTag;
+use App\Models\OrderItem;
 use App\Support\ApiResponse;
 use App\Support\ProductSerializer;
 use App\Services\AdminNotifier;
@@ -142,6 +143,14 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        if (OrderItem::where('product_id', $product->id)->exists()) {
+            return ApiResponse::error(
+                'Cannot delete a product that is included in an order.',
+                ['product' => ['The product is part of order history and must be kept.']],
+                409
+            );
+        }
+
         AdminNotifier::resolveStockAlerts($product->id);
         $product->delete();
         return ApiResponse::success('Product deleted successfully');
